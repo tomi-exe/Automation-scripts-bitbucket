@@ -102,7 +102,7 @@ pipelines:
             - TARGET_REPO="../repo-aplicacion" npm run release:docs
 ```
 
-Configurar `GITHUB_AUTOMATION_TOKEN` como variable segura en Bitbucket para clonar este repo central desde GitHub si es privado.
+Configurar `GITHUB_AUTOMATION_TOKEN` como variable segura en Bitbucket para clonar este repo central desde GitHub si es privado. No usar `AUTOMATION_REPO_TOKEN` para este repo.
 
 ## Scripts disponibles
 
