@@ -2,7 +2,7 @@
 
 Scripts reutilizables para generar documentacion de releases con OpenAI y publicar una pagina estructurada en Confluence Cloud desde Bitbucket Pipelines.
 
-La idea es clonar este repo central desde cualquier pipeline, instalar dependencias y ejecutar la automatizacion contra el repo objetivo usando `TARGET_REPO`. Asi los repos de aplicacion no necesitan cargar ni duplicar estos scripts.
+Este repo vive en GitHub y esta pensado para ser clonado desde pipelines de otros repos. La idea es instalar dependencias y ejecutar la automatizacion contra el repo objetivo usando `TARGET_REPO`. Asi los repos de aplicacion no necesitan cargar ni duplicar estos scripts.
 
 ## Requisitos
 
@@ -96,13 +96,13 @@ pipelines:
             - npm ci
             - npm test
             - cd ..
-            - git clone https://x-token-auth:${AUTOMATION_REPO_TOKEN}@bitbucket.org/TU_WORKSPACE/Automation-scripts-bitbucket.git
+            - git clone https://x-access-token:${GITHUB_AUTOMATION_TOKEN}@github.com/tomi-exe/Automation-scripts-bitbucket.git
             - cd Automation-scripts-bitbucket
             - npm ci
             - TARGET_REPO="../repo-aplicacion" npm run release:docs
 ```
 
-Configurar `AUTOMATION_REPO_TOKEN` como variable segura para clonar este repo central si es privado.
+Configurar `GITHUB_AUTOMATION_TOKEN` como variable segura en Bitbucket para clonar este repo central desde GitHub si es privado.
 
 ## Scripts disponibles
 
