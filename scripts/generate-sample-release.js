@@ -1,0 +1,42 @@
+const fs = require("fs");
+const path = require("path");
+
+const outputPath = path.resolve(process.cwd(), "release-input.json");
+
+const payload = {
+  date: new Date().toISOString().slice(0, 10),
+  repo: "ticket-api-demo",
+  branch: "main",
+  commit: "abc1234",
+  targetRepo: "sample",
+  commits: [
+    "a1b2c3d - feat: create base ticket API (Demo Dev)",
+    "b2c3d4e - feat: add ticket validation rules (Demo Dev)",
+    "c3d4e5f - fix: restrict ticket priority values (Demo Dev)",
+    "d4e5f6g - refactor: move ticket logic into service layer (Demo Dev)",
+    "e5f6g7h - test: add ticket endpoint coverage (Demo Dev)",
+  ].join("\n"),
+  diffStat: [
+    " src/controllers/tickets.controller.js | 42 ++++++++++++++",
+    " src/services/tickets.service.js       | 58 ++++++++++++++++++++",
+    " src/validators/tickets.validator.js   | 31 +++++++++++",
+    " tests/tickets.test.js                 | 76 +++++++++++++++++++++++++++",
+    " 4 files changed, 207 insertions(+)",
+  ].join("\n"),
+  diffSummary: `
+diff --git a/src/validators/tickets.validator.js b/src/validators/tickets.validator.js
++ const allowedPriorities = ["low", "medium", "high"];
++ const allowedStatuses = ["open", "in_progress", "resolved"];
++ validate required fields: title, description
+
+diff --git a/src/services/tickets.service.js b/src/services/tickets.service.js
++ move ticket creation and status update logic into service layer
+
+diff --git a/tests/tickets.test.js b/tests/tickets.test.js
++ add coverage for ticket creation, priority validation and status update
+`,
+};
+
+fs.writeFileSync(outputPath, JSON.stringify(payload, null, 2));
+
+console.log(`release-input.json sample generado en ${outputPath}`);
