@@ -1,4 +1,4 @@
-# release-docs-automation
+# Automation-scripts-bitbucket
 
 Scripts reutilizables para generar documentacion de releases con OpenAI y publicar una pagina estructurada en Confluence Cloud desde Bitbucket Pipelines.
 
