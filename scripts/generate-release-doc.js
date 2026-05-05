@@ -18,16 +18,31 @@ function assertFileExists(filePath, label) {
   }
 }
 
-function getAiConfig() {
-  if (!process.env.GROQ_API_KEY) {
-    throw new Error("Falta GROQ_API_KEY en variables de entorno.");
+function getEnv(name, { required = false } = {}) {
+  const value = process.env[name]?.trim();
+
+  if (required && !value) {
+    throw new Error(`Falta ${name} en variables de entorno.`);
   }
+
+  if (value?.startsWith("$")) {
+    throw new Error(
+      `La variable ${name} parece estar mal configurada: contiene el literal ${value}. Usa el valor real, sin $ ni comillas.`
+    );
+  }
+
+  return value;
+}
+
+function getAiConfig() {
+  const groqApiKey = getEnv("GROQ_API_KEY", { required: true });
+  const model = getEnv("AI_MODEL") || "llama-3.1-8b-instant";
 
   return {
     provider: "groq",
-    model: process.env.AI_MODEL || "llama-3.1-8b-instant",
+    model,
     clientOptions: {
-      apiKey: process.env.GROQ_API_KEY,
+      apiKey: groqApiKey,
       baseURL: "https://api.groq.com/openai/v1",
     },
   };

@@ -113,6 +113,33 @@ pipelines:
 
 Configurar `GITHUB_AUTOMATION_TOKEN` como variable segura en Bitbucket para clonar este repo central desde GitHub si es privado. No usar `AUTOMATION_REPO_TOKEN` para este repo.
 
+## Troubleshooting
+
+### Confluence responde 401 Unauthorized
+
+Revisar en Bitbucket:
+
+- `CONFLUENCE_EMAIL` debe ser el email real de la cuenta Atlassian.
+- `CONFLUENCE_API_TOKEN` debe ser el token real.
+- No usar valores como `$CONFLUENCE_API_TOKEN`.
+- No envolver el valor en comillas.
+
+### El log muestra variables como `$AI_MODEL`
+
+Eso significa que la variable fue creada en Bitbucket con el texto literal `$AI_MODEL`.
+
+Corregir el valor en:
+
+```text
+Repository settings -> Pipelines -> Repository variables
+```
+
+Ejemplo correcto:
+
+```text
+AI_MODEL=llama-3.1-8b-instant
+```
+
 ## Scripts disponibles
 
 - `npm run release:collect`: recolecta metadata, commits y diffs del repo objetivo.

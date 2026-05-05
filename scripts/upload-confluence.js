@@ -16,10 +16,22 @@ const requiredEnvVars = [
 ];
 
 function validateEnv() {
-  const missing = requiredEnvVars.filter((key) => !process.env[key]);
+  const missing = requiredEnvVars.filter((key) => !process.env[key]?.trim());
 
   if (missing.length > 0) {
     throw new Error(`Faltan variables requeridas: ${missing.join(", ")}`);
+  }
+
+  const invalid = requiredEnvVars.filter((key) =>
+    process.env[key]?.trim().startsWith("$")
+  );
+
+  if (invalid.length > 0) {
+    throw new Error(
+      `Variables mal configuradas: ${invalid.join(
+        ", "
+      )}. Usa valores reales en Bitbucket, sin $ ni comillas.`
+    );
   }
 }
 
@@ -143,6 +155,12 @@ async function main() {
 
 main().catch((error) => {
   console.error("Error publicando en Confluence:");
+
+  if (error.response?.status === 401) {
+    console.error(
+      "Confluence respondió 401 Unauthorized. Revisa CONFLUENCE_EMAIL y CONFLUENCE_API_TOKEN en Bitbucket; deben ser valores reales y no literales como $CONFLUENCE_API_TOKEN."
+    );
+  }
 
   if (error.response?.data) {
     console.error(JSON.stringify(error.response.data, null, 2));
