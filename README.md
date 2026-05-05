@@ -1,13 +1,13 @@
 # Automation-scripts-bitbucket
 
-Scripts reutilizables para generar documentacion de releases con OpenAI y publicar una pagina estructurada en Confluence Cloud desde Bitbucket Pipelines.
+Scripts reutilizables para generar documentacion de releases con Groq y publicar una pagina estructurada en Confluence Cloud desde Bitbucket Pipelines.
 
 Este repo vive en GitHub y esta pensado para ser clonado desde pipelines de otros repos. La idea es instalar dependencias y ejecutar la automatizacion contra el repo objetivo usando `TARGET_REPO`. Asi los repos de aplicacion no necesitan cargar ni duplicar estos scripts.
 
 ## Requisitos
 
 - Node.js 20
-- OpenAI API key o Groq API key
+- Groq API key
 - Confluence Cloud
 - Token de Confluence
 - Repo objetivo con historial Git
@@ -19,7 +19,7 @@ Bitbucket commits / diff
         ↓
 collect-changes.js
         ↓
-OpenAI
+Groq
         ↓
 release-doc.html
         ↓
@@ -31,9 +31,7 @@ Pagina de release estructurada
 ## Variables de entorno
 
 ```env
-OPENAI_API_KEY=
 GROQ_API_KEY=
-AI_PROVIDER=openai
 AI_MODEL=
 CONFLUENCE_EMAIL=
 CONFLUENCE_API_TOKEN=
@@ -46,20 +44,11 @@ TARGET_REPO=
 `TARGET_REPO` es opcional. Si no se define, los comandos git se ejecutan sobre el directorio actual.
 `CONFLUENCE_SPACE_ID` puede ser el ID numérico del espacio o la key del espacio, por ejemplo `DDS`.
 
-Para usar Groq:
+Configurar Groq:
 
 ```env
-AI_PROVIDER=groq
 AI_MODEL=llama-3.1-8b-instant
 GROQ_API_KEY=
-```
-
-Para usar OpenAI:
-
-```env
-AI_PROVIDER=openai
-AI_MODEL=gpt-4.1-mini
-OPENAI_API_KEY=
 ```
 
 ## Uso local
@@ -127,7 +116,7 @@ Configurar `GITHUB_AUTOMATION_TOKEN` como variable segura en Bitbucket para clon
 ## Scripts disponibles
 
 - `npm run release:collect`: recolecta metadata, commits y diffs del repo objetivo.
-- `npm run release:generate-doc`: usa OpenAI para generar `release-doc.html`.
+- `npm run release:generate-doc`: usa Groq para generar `release-doc.html`.
 - `npm run release:publish`: publica el HTML en Confluence.
 - `npm run release:docs`: ejecuta collect, generate y publish.
 - `npm run release:sample`: genera input mock y HTML con OpenAI.
@@ -144,7 +133,7 @@ Ambos estan ignorados por git.
 
 - La calidad de la documentacion depende de commits y diffs claros.
 - `git diff HEAD~1 HEAD` requiere historial suficiente.
-- OpenAI y Confluence requieren credenciales reales configuradas en variables seguras.
+- Groq y Confluence requieren credenciales reales configuradas en variables seguras.
 - El template es HTML simple compatible con Confluence storage.
 
 ## Mejoras futuras

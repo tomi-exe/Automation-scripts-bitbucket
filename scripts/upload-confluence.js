@@ -70,6 +70,34 @@ async function resolveSpaceId(baseUrl, auth) {
   return space.id;
 }
 
+function getTitle(input, suffix = "") {
+  const baseTitle = `Release ${input.date} - ${input.branch}`;
+  return suffix ? `${baseTitle} - ${suffix}` : baseTitle;
+}
+
+function getCommitSuffix(input) {
+  if (!input.commit || input.commit === "unknown-commit") {
+    return new Date().toISOString().replace(/[-:T.Z]/g, "").slice(0, 12);
+  }
+
+  return input.commit.slice(0, 7);
+}
+
+function isDuplicateTitleError(error) {
+  const errors = error.response?.data?.errors || [];
+
+  return errors.some((item) => {
+    const text = `${item.title || ""} ${item.detail || ""}`.toLowerCase();
+    return text.includes("same title") || text.includes("title already exists");
+  });
+}
+
+async function createPage(baseUrl, auth, payload) {
+  return axios.post(`${baseUrl}/api/v2/pages`, payload, {
+    headers: getHeaders(auth),
+  });
+}
+
 async function main() {
   validateEnv();
 
@@ -80,14 +108,13 @@ async function main() {
   const html = fs.readFileSync(htmlPath, "utf-8");
 
   const baseUrl = process.env.CONFLUENCE_BASE_URL.replace(/\/$/, "");
-  const title = `Release ${input.date} - ${input.branch}`;
   const auth = getAuthHeader();
   const spaceId = await resolveSpaceId(baseUrl, auth);
 
   const payload = {
     spaceId,
     status: "current",
-    title,
+    title: getTitle(input),
     parentId: process.env.CONFLUENCE_PARENT_PAGE_ID,
     body: {
       representation: "storage",
@@ -95,13 +122,23 @@ async function main() {
     },
   };
 
-  const response = await axios.post(`${baseUrl}/api/v2/pages`, payload, {
-    headers: getHeaders(auth),
-  });
+  let response;
+
+  try {
+    response = await createPage(baseUrl, auth, payload);
+  } catch (error) {
+    if (!isDuplicateTitleError(error)) {
+      throw error;
+    }
+
+    payload.title = getTitle(input, getCommitSuffix(input));
+    console.log(`El título ya existía. Reintentando como: ${payload.title}`);
+    response = await createPage(baseUrl, auth, payload);
+  }
 
   console.log("Página creada en Confluence.");
   console.log(`ID: ${response.data.id}`);
-  console.log(`Título: ${title}`);
+  console.log(`Título: ${payload.title}`);
 }
 
 main().catch((error) => {
