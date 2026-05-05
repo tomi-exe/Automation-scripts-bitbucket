@@ -44,6 +44,7 @@ TARGET_REPO=
 ```
 
 `TARGET_REPO` es opcional. Si no se define, los comandos git se ejecutan sobre el directorio actual.
+`CONFLUENCE_SPACE_ID` puede ser el ID numérico del espacio o la key del espacio, por ejemplo `DDS`.
 
 Para usar Groq:
 

@@ -29,6 +29,47 @@ function assertFileExists(filePath, label) {
   }
 }
 
+function getAuthHeader() {
+  return Buffer.from(
+    `${process.env.CONFLUENCE_EMAIL}:${process.env.CONFLUENCE_API_TOKEN}`
+  ).toString("base64");
+}
+
+function getHeaders(auth) {
+  return {
+    Authorization: `Basic ${auth}`,
+    Accept: "application/json",
+    "Content-Type": "application/json",
+  };
+}
+
+async function resolveSpaceId(baseUrl, auth) {
+  const configuredSpace = process.env.CONFLUENCE_SPACE_ID;
+
+  if (/^\d+$/.test(configuredSpace)) {
+    return configuredSpace;
+  }
+
+  const response = await axios.get(`${baseUrl}/api/v2/spaces`, {
+    params: {
+      keys: configuredSpace,
+      limit: 1,
+    },
+    headers: getHeaders(auth),
+  });
+
+  const space = response.data?.results?.[0];
+
+  if (!space?.id) {
+    throw new Error(
+      `No se encontró un espacio de Confluence con key: ${configuredSpace}`
+    );
+  }
+
+  console.log(`Space key ${configuredSpace} resuelta como ID ${space.id}.`);
+  return space.id;
+}
+
 async function main() {
   validateEnv();
 
@@ -40,13 +81,11 @@ async function main() {
 
   const baseUrl = process.env.CONFLUENCE_BASE_URL.replace(/\/$/, "");
   const title = `Release ${input.date} - ${input.branch}`;
-
-  const auth = Buffer.from(
-    `${process.env.CONFLUENCE_EMAIL}:${process.env.CONFLUENCE_API_TOKEN}`
-  ).toString("base64");
+  const auth = getAuthHeader();
+  const spaceId = await resolveSpaceId(baseUrl, auth);
 
   const payload = {
-    spaceId: process.env.CONFLUENCE_SPACE_ID,
+    spaceId,
     status: "current",
     title,
     parentId: process.env.CONFLUENCE_PARENT_PAGE_ID,
@@ -57,11 +96,7 @@ async function main() {
   };
 
   const response = await axios.post(`${baseUrl}/api/v2/pages`, payload, {
-    headers: {
-      Authorization: `Basic ${auth}`,
-      Accept: "application/json",
-      "Content-Type": "application/json",
-    },
+    headers: getHeaders(auth),
   });
 
   console.log("Página creada en Confluence.");
