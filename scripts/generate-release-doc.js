@@ -11,6 +11,7 @@ const templatePath = path.resolve(
   "confluence-release-template.html"
 );
 const outputPath = path.resolve(process.cwd(), "release-doc.html");
+const brokenStatuses = ["broken", "failed", "failure"];
 
 function assertFileExists(filePath, label) {
   if (!fs.existsSync(filePath)) {
@@ -46,6 +47,23 @@ function getAiConfig() {
       baseURL: "https://api.groq.com/openai/v1",
     },
   };
+}
+
+function getReleaseStatus(input) {
+  return (input.releaseStatus || "unknown").toLowerCase();
+}
+
+function decorateReleaseStatus(html, input) {
+  const status = getReleaseStatus(input);
+
+  if (!brokenStatuses.includes(status)) {
+    return html;
+  }
+
+  return html.replace(
+    /<h1([^>]*)>/i,
+    '<h1$1 style="color: #bf2600;">'
+  );
 }
 
 async function main() {
@@ -124,11 +142,14 @@ Reglas obligatorias:
     throw new Error("OpenAI no devolvió contenido.");
   }
 
-  fs.writeFileSync(outputPath, html);
+  const decoratedHtml = decorateReleaseStatus(html, input);
+
+  fs.writeFileSync(outputPath, decoratedHtml);
 
   console.log(`release-doc.html generado en ${outputPath}`);
   console.log(`Proveedor AI usado: ${aiConfig.provider}`);
   console.log(`Modelo AI usado: ${aiConfig.model}`);
+  console.log(`Estado del release: ${getReleaseStatus(input)}`);
 }
 
 main().catch((error) => {

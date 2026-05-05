@@ -60,6 +60,7 @@ const payload = {
   branch,
   commit,
   targetRepo,
+  releaseStatus: process.env.RELEASE_STATUS || "unknown",
   commits,
   diffStat,
   diffSummary,

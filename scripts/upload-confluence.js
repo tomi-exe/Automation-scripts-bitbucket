@@ -83,7 +83,11 @@ async function resolveSpaceId(baseUrl, auth) {
 }
 
 function getTitle(input, suffix = "") {
-  const baseTitle = `Release ${input.date} - ${input.branch}`;
+  const status = (input.releaseStatus || "").toLowerCase();
+  const statusPrefix = ["broken", "failed", "failure"].includes(status)
+    ? "[BROKEN] "
+    : "";
+  const baseTitle = `${statusPrefix}Release ${input.date} - ${input.branch}`;
   return suffix ? `${baseTitle} - ${suffix}` : baseTitle;
 }
 

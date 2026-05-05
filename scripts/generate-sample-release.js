@@ -9,6 +9,7 @@ const payload = {
   branch: "main",
   commit: "abc1234",
   targetRepo: "sample",
+  releaseStatus: process.env.RELEASE_STATUS || "unknown",
   commits: [
     "a1b2c3d - feat: create base ticket API (Demo Dev)",
     "b2c3d4e - feat: add ticket validation rules (Demo Dev)",
