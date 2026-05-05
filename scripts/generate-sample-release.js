@@ -10,6 +10,18 @@ const payload = {
   commit: "abc1234",
   targetRepo: "sample",
   releaseStatus: process.env.RELEASE_STATUS || "unknown",
+  testOutput: process.env.RELEASE_STATUS === "broken"
+    ? [
+        "FAIL tests/tickets.test.js",
+        "Internal Ticket API › GET /health returns service status",
+        "expect(received).toEqual(expected) // deep equality",
+        "+   \"environment\": \"test\"",
+        "+   \"timestamp\": \"2026-05-05T05:26:25.100Z\"",
+        "+   \"version\": \"1.0.1\"",
+        "Test Suites: 1 failed, 1 total",
+        "Tests: 1 failed, 7 passed, 8 total",
+      ].join("\n")
+    : "Todos los tests pasaron.",
   commits: [
     "a1b2c3d - feat: create base ticket API (Demo Dev)",
     "b2c3d4e - feat: add ticket validation rules (Demo Dev)",

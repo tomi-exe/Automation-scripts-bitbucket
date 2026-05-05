@@ -60,10 +60,21 @@ function decorateReleaseStatus(html, input) {
     return html;
   }
 
-  return html.replace(
+  const statusMacro = [
+    '<ac:structured-macro ac:name="status">',
+    '  <ac:parameter ac:name="colour">Red</ac:parameter>',
+    '  <ac:parameter ac:name="title">BROKEN</ac:parameter>',
+    '</ac:structured-macro>',
+    '<p><strong>Estado del release:</strong> Tests fallidos. Revisar detalle de pruebas en esta pagina.</p>',
+    "",
+  ].join("\n");
+
+  const htmlWithRedTitle = html.replace(
     /<h1([^>]*)>/i,
     '<h1$1 style="color: #bf2600;">'
   );
+
+  return `${statusMacro}${htmlWithRedTitle}`;
 }
 
 async function main() {
@@ -106,11 +117,19 @@ ${input.diffStat}
 Diff resumido:
 ${input.diffSummary}
 
+Estado del release:
+${input.releaseStatus || "unknown"}
+
+Salida de tests:
+${input.testOutput || "No hay salida de tests disponible."}
+
 Reglas obligatorias:
 - Devuelve solo HTML final.
 - No uses Markdown.
 - No inventes información.
 - Si la información no permite afirmar algo, escribe que no se identifica con la información disponible.
+- Si el estado del release es broken, explica qué prueba falló usando la salida de tests disponible.
+- Si hay stack trace o assertion error de tests, resume el archivo, nombre del test, diferencia esperada/recibida y causa probable.
 - Separa claramente resumen funcional y resumen técnico.
 - El resumen funcional debe ser entendible por negocio, PM o QA.
 - El resumen técnico debe servir a desarrolladores.

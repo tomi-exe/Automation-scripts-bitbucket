@@ -54,6 +54,27 @@ const diffSummary = run(
   "No hay diff resumido disponible."
 );
 
+function readTestOutput() {
+  const testOutputPath = process.env.TEST_OUTPUT_PATH;
+
+  if (!testOutputPath) {
+    return "No hay salida de tests disponible.";
+  }
+
+  try {
+    const resolvedPath = path.resolve(testOutputPath);
+    const output = fs.readFileSync(resolvedPath, "utf-8").trim();
+
+    if (!output) {
+      return "El archivo de salida de tests existe, pero está vacío.";
+    }
+
+    return output.slice(-12000);
+  } catch (error) {
+    return `[No se pudo leer TEST_OUTPUT_PATH: ${testOutputPath}]`;
+  }
+}
+
 const payload = {
   date,
   repo,
@@ -61,6 +82,7 @@ const payload = {
   commit,
   targetRepo,
   releaseStatus: process.env.RELEASE_STATUS || "unknown",
+  testOutput: readTestOutput(),
   commits,
   diffStat,
   diffSummary,

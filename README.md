@@ -146,7 +146,7 @@ AI_MODEL=llama-3.1-8b-instant
 - `npm run release:generate-doc`: usa Groq para generar `release-doc.html`.
 - `npm run release:publish`: publica el HTML en Confluence.
 - `npm run release:docs`: ejecuta collect, generate y publish.
-- `npm run release:sample`: genera input mock y HTML con OpenAI.
+- `npm run release:sample`: genera input mock y HTML con Groq.
 - `npm run release:sample:full`: genera input mock, HTML y publica en Confluence.
 
 ## Releases con tests fallidos
@@ -156,13 +156,15 @@ El repo de aplicacion puede pasar `RELEASE_STATUS=broken` al ejecutar `release:d
 Cuando el estado es `broken`:
 
 - La pagina igual se publica en Confluence.
-- El titulo principal del HTML se pinta rojo.
+- El titulo principal del HTML se pinta rojo cuando Confluence respeta estilos inline.
+- Se agrega un macro `BROKEN` rojo compatible con Confluence.
 - El titulo de la pagina se prefija con `[BROKEN]`.
+- Si el pipeline pasa `TEST_OUTPUT_PATH`, Groq resume qué test falló, en qué archivo y por qué.
 
 Ejemplo:
 
 ```bash
-RELEASE_STATUS=broken TARGET_REPO="$BITBUCKET_CLONE_DIR" npm run release:docs
+RELEASE_STATUS=broken TEST_OUTPUT_PATH="$BITBUCKET_CLONE_DIR/test-output.log" TARGET_REPO="$BITBUCKET_CLONE_DIR" npm run release:docs
 ```
 
 ## Archivos generados
