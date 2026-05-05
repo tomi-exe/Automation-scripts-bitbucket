@@ -7,7 +7,7 @@ Este repo vive en GitHub y esta pensado para ser clonado desde pipelines de otro
 ## Requisitos
 
 - Node.js 20
-- OpenAI API key
+- OpenAI API key o Groq API key
 - Confluence Cloud
 - Token de Confluence
 - Repo objetivo con historial Git
@@ -32,6 +32,9 @@ Pagina de release estructurada
 
 ```env
 OPENAI_API_KEY=
+GROQ_API_KEY=
+AI_PROVIDER=openai
+AI_MODEL=
 CONFLUENCE_EMAIL=
 CONFLUENCE_API_TOKEN=
 CONFLUENCE_BASE_URL=https://your-domain.atlassian.net/wiki
@@ -41,6 +44,22 @@ TARGET_REPO=
 ```
 
 `TARGET_REPO` es opcional. Si no se define, los comandos git se ejecutan sobre el directorio actual.
+
+Para usar Groq:
+
+```env
+AI_PROVIDER=groq
+AI_MODEL=llama-3.1-8b-instant
+GROQ_API_KEY=
+```
+
+Para usar OpenAI:
+
+```env
+AI_PROVIDER=openai
+AI_MODEL=gpt-4.1-mini
+OPENAI_API_KEY=
+```
 
 ## Uso local
 

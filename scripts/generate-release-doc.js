@@ -18,20 +18,46 @@ function assertFileExists(filePath, label) {
   }
 }
 
-async function main() {
+function getAiConfig() {
+  const provider = (process.env.AI_PROVIDER || "openai").toLowerCase();
+
+  if (provider === "groq") {
+    if (!process.env.GROQ_API_KEY) {
+      throw new Error("Falta GROQ_API_KEY en variables de entorno.");
+    }
+
+    return {
+      provider,
+      model: process.env.AI_MODEL || "llama-3.1-8b-instant",
+      clientOptions: {
+        apiKey: process.env.GROQ_API_KEY,
+        baseURL: "https://api.groq.com/openai/v1",
+      },
+    };
+  }
+
   if (!process.env.OPENAI_API_KEY) {
     throw new Error("Falta OPENAI_API_KEY en variables de entorno.");
   }
 
+  return {
+    provider,
+    model: process.env.AI_MODEL || "gpt-4.1-mini",
+    clientOptions: {
+      apiKey: process.env.OPENAI_API_KEY,
+    },
+  };
+}
+
+async function main() {
   assertFileExists(inputPath, "release-input.json");
   assertFileExists(templatePath, "confluence-release-template.html");
 
   const input = JSON.parse(fs.readFileSync(inputPath, "utf-8"));
   const template = fs.readFileSync(templatePath, "utf-8");
+  const aiConfig = getAiConfig();
 
-  const client = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-  });
+  const client = new OpenAI(aiConfig.clientOptions);
 
   const prompt = `
 Genera documentación de release en HTML compatible con Confluence.
@@ -78,7 +104,7 @@ Reglas obligatorias:
 `;
 
   const response = await client.chat.completions.create({
-    model: "gpt-4.1-mini",
+    model: aiConfig.model,
     messages: [
       {
         role: "system",
@@ -102,6 +128,8 @@ Reglas obligatorias:
   fs.writeFileSync(outputPath, html);
 
   console.log(`release-doc.html generado en ${outputPath}`);
+  console.log(`Proveedor AI usado: ${aiConfig.provider}`);
+  console.log(`Modelo AI usado: ${aiConfig.model}`);
 }
 
 main().catch((error) => {
