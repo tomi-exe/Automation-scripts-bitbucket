@@ -39,6 +39,34 @@ const commit =
   process.env.BITBUCKET_COMMIT ||
   run("git rev-parse HEAD", "unknown-commit");
 
+function getRepoSlug(repoName) {
+  if (process.env.BITBUCKET_REPO_SLUG) {
+    return process.env.BITBUCKET_REPO_SLUG;
+  }
+
+  if (repoName.includes("/")) {
+    return repoName.split("/").pop();
+  }
+
+  return path.basename(repoName).replace(/\.git$/, "") || "unknown-repo";
+}
+
+function getRepoUrl(repoName) {
+  if (process.env.BITBUCKET_GIT_HTTP_ORIGIN) {
+    return process.env.BITBUCKET_GIT_HTTP_ORIGIN;
+  }
+
+  if (process.env.BITBUCKET_REPO_FULL_NAME) {
+    return `https://bitbucket.org/${process.env.BITBUCKET_REPO_FULL_NAME}`;
+  }
+
+  if (repoName.startsWith("http")) {
+    return repoName;
+  }
+
+  return "";
+}
+
 const commits = run(
   'git log -10 --pretty=format:"%h - %s (%an)"',
   "No hay commits disponibles."
@@ -78,6 +106,10 @@ function readTestOutput() {
 const payload = {
   date,
   repo,
+  repoFullName: process.env.BITBUCKET_REPO_FULL_NAME || repo,
+  repoSlug: getRepoSlug(repo),
+  repoUrl: getRepoUrl(repo),
+  projectKey: process.env.BITBUCKET_PROJECT_KEY || "",
   branch,
   commit,
   targetRepo,

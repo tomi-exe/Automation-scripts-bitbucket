@@ -1,6 +1,6 @@
 # Automation-scripts-bitbucket
 
-Scripts reutilizables para generar documentacion de releases con Groq y publicar una pagina estructurada en Confluence Cloud desde Bitbucket Pipelines.
+Scripts reutilizables para generar documentacion de releases con Groq y publicarla en una web interna desde Bitbucket Pipelines.
 
 Este repo vive en GitHub y esta pensado para ser clonado desde pipelines de otros repos. La idea es instalar dependencias y ejecutar la automatizacion contra el repo objetivo usando `TARGET_REPO`. Asi los repos de aplicacion no necesitan cargar ni duplicar estos scripts.
 
@@ -8,8 +8,8 @@ Este repo vive en GitHub y esta pensado para ser clonado desde pipelines de otro
 
 - Node.js 20
 - Groq API key
-- Confluence Cloud
-- Token de Confluence
+- Web interna desplegada, por ejemplo en Vercel
+- Endpoint seguro para recibir releases
 - Repo objetivo con historial Git
 
 ## Flujo
@@ -23,9 +23,9 @@ Groq
         ↓
 release-doc.html
         ↓
-Confluence API
+Release Site API
         ↓
-Pagina de release estructurada
+Pagina de release estructurada en /proyectos/{projectSlug}/wiki
 ```
 
 ## Variables de entorno
@@ -33,16 +33,12 @@ Pagina de release estructurada
 ```env
 GROQ_API_KEY=
 AI_MODEL=
-CONFLUENCE_EMAIL=
-CONFLUENCE_API_TOKEN=
-CONFLUENCE_BASE_URL=https://your-domain.atlassian.net/wiki
-CONFLUENCE_SPACE_ID=
-CONFLUENCE_PARENT_PAGE_ID=
+RELEASE_SITE_URL=
+RELEASE_SITE_TOKEN=
 TARGET_REPO=
 ```
 
 `TARGET_REPO` es opcional. Si no se define, los comandos git se ejecutan sobre el directorio actual.
-`CONFLUENCE_SPACE_ID` puede ser el ID numérico del espacio o la key del espacio, por ejemplo `DDS`.
 
 Configurar Groq:
 
@@ -105,23 +101,22 @@ pipelines:
             - npm ci
             - npm test
             - cd ..
-            - git clone https://x-access-token:${GITHUB_AUTOMATION_TOKEN}@github.com/tomi-exe/Automation-scripts-bitbucket.git
+            - git clone https://github.com/tomi-exe/Automation-scripts-bitbucket.git
             - cd Automation-scripts-bitbucket
             - npm ci
             - TARGET_REPO="../repo-aplicacion" npm run release:docs
 ```
 
-Configurar `GITHUB_AUTOMATION_TOKEN` como variable segura en Bitbucket para clonar este repo central desde GitHub si es privado. No usar `AUTOMATION_REPO_TOKEN` para este repo.
+Como el repo central es publico, no se requiere token de GitHub para clonarlo.
 
 ## Troubleshooting
 
-### Confluence responde 401 Unauthorized
+### La web responde 401 Unauthorized
 
 Revisar en Bitbucket:
 
-- `CONFLUENCE_EMAIL` debe ser el email real de la cuenta Atlassian.
-- `CONFLUENCE_API_TOKEN` debe ser el token real.
-- No usar valores como `$CONFLUENCE_API_TOKEN`.
+- `RELEASE_SITE_TOKEN` debe ser el token real esperado por la web.
+- No usar valores como `$RELEASE_SITE_TOKEN`.
 - No envolver el valor en comillas.
 
 ### El log muestra variables como `$AI_MODEL`
@@ -144,10 +139,35 @@ AI_MODEL=llama-3.1-8b-instant
 
 - `npm run release:collect`: recolecta metadata, commits y diffs del repo objetivo.
 - `npm run release:generate-doc`: usa Groq para generar `release-doc.html`.
-- `npm run release:publish`: publica el HTML en Confluence.
-- `npm run release:docs`: ejecuta collect, generate y publish.
+- `npm run release:publish`: publica el release en la web interna.
+- `npm run release:publish:site`: publica el release en la web interna.
+- `npm run release:publish:confluence`: publica el HTML en Confluence, disponible como fallback.
+- `npm run release:docs`: ejecuta collect, generate y publish hacia la web interna.
 - `npm run release:sample`: genera input mock y HTML con Groq.
-- `npm run release:sample:full`: genera input mock, HTML y publica en Confluence.
+- `npm run release:sample:full`: genera input mock, HTML y publica en la web interna.
+
+## Endpoint de la web interna
+
+La web debe exponer un endpoint:
+
+```http
+POST /api/release-docs
+Authorization: Bearer <RELEASE_SITE_TOKEN>
+Content-Type: application/json
+```
+
+El script `upload-release-site.js` envia un payload con:
+
+- metadata del proyecto y repositorio;
+- estado del release;
+- HTML generado por Groq;
+- commits y diffs;
+- salida de tests;
+- ruta sugerida `/proyectos/{projectSlug}/wiki`.
+
+El backend de la web debe decidir como guardar el release en BD y como mostrarlo.
+
+Ver contrato completo sugerido en `docs/release-site-payload.md`.
 
 ## Releases con tests fallidos
 
@@ -155,10 +175,9 @@ El repo de aplicacion puede pasar `RELEASE_STATUS=broken` al ejecutar `release:d
 
 Cuando el estado es `broken`:
 
-- La pagina igual se publica en Confluence.
-- El titulo principal del HTML se pinta rojo cuando Confluence respeta estilos inline.
-- Se agrega un macro `BROKEN` rojo compatible con Confluence.
-- El titulo de la pagina se prefija con `[BROKEN]`.
+- La pagina igual se publica en la web interna.
+- El titulo principal del HTML se pinta rojo.
+- El titulo del release se prefija con `[BROKEN]`.
 - Si el pipeline pasa `TEST_OUTPUT_PATH`, Groq resume qué test falló, en qué archivo y por qué.
 
 Ejemplo:
@@ -178,8 +197,8 @@ Ambos estan ignorados por git.
 
 - La calidad de la documentacion depende de commits y diffs claros.
 - `git diff HEAD~1 HEAD` requiere historial suficiente.
-- Groq y Confluence requieren credenciales reales configuradas en variables seguras.
-- El template es HTML simple compatible con Confluence storage.
+- Groq y la web interna requieren credenciales reales configuradas en variables seguras.
+- El template es HTML simple para renderizar en la web interna.
 
 ## Mejoras futuras
 

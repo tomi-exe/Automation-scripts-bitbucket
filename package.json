@@ -1,16 +1,18 @@
 {
   "name": "release-docs-automation",
   "version": "1.0.0",
-  "description": "Reusable automation scripts to generate release documentation with OpenAI and publish it to Confluence.",
+  "description": "Reusable automation scripts to generate release documentation with Groq and publish it to a release docs website.",
   "main": "index.js",
   "type": "commonjs",
   "scripts": {
     "release:collect": "node scripts/collect-changes.js",
     "release:generate-doc": "node scripts/generate-release-doc.js",
-    "release:publish": "node scripts/upload-confluence.js",
-    "release:docs": "npm run release:collect && npm run release:generate-doc && npm run release:publish",
+    "release:publish": "node scripts/upload-release-site.js",
+    "release:publish:site": "node scripts/upload-release-site.js",
+    "release:publish:confluence": "node scripts/upload-confluence.js",
+    "release:docs": "npm run release:collect && npm run release:generate-doc && npm run release:publish:site",
     "release:sample": "node scripts/generate-sample-release.js && npm run release:generate-doc",
-    "release:sample:full": "node scripts/generate-sample-release.js && npm run release:generate-doc && npm run release:publish"
+    "release:sample:full": "node scripts/generate-sample-release.js && npm run release:generate-doc && npm run release:publish:site"
   },
   "dependencies": {
     "axios": "^1.7.9",

@@ -60,21 +60,10 @@ function decorateReleaseStatus(html, input) {
     return html;
   }
 
-  const statusMacro = [
-    '<ac:structured-macro ac:name="status">',
-    '  <ac:parameter ac:name="colour">Red</ac:parameter>',
-    '  <ac:parameter ac:name="title">BROKEN</ac:parameter>',
-    '</ac:structured-macro>',
-    '<p><strong>Estado del release:</strong> Tests fallidos. Revisar detalle de pruebas en esta pagina.</p>',
-    "",
-  ].join("\n");
-
-  const htmlWithRedTitle = html.replace(
+  return html.replace(
     /<h1([^>]*)>/i,
     '<h1$1 style="color: #bf2600;">'
   );
-
-  return `${statusMacro}${htmlWithRedTitle}`;
 }
 
 async function main() {
@@ -88,7 +77,7 @@ async function main() {
   const client = new OpenAI(aiConfig.clientOptions);
 
   const prompt = `
-Genera documentación de release en HTML compatible con Confluence.
+Genera documentación de release en HTML simple para una página web interna.
 
 Debes usar exactamente este template:
 
