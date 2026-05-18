@@ -1,6 +1,6 @@
 # Automation-scripts-bitbucket
 
-Scripts reutilizables para generar documentacion de releases con Groq y publicarla en una web interna desde Bitbucket Pipelines.
+Scripts reutilizables para generar documentacion de releases con Groq y publicarla en Kull desde Bitbucket Pipelines.
 
 Este repo vive en GitHub y esta pensado para ser clonado desde pipelines de otros repos. La idea es instalar dependencias y ejecutar la automatizacion contra el repo objetivo usando `TARGET_REPO`. Asi los repos de aplicacion no necesitan cargar ni duplicar estos scripts.
 
@@ -8,8 +8,8 @@ Este repo vive en GitHub y esta pensado para ser clonado desde pipelines de otro
 
 - Node.js 20
 - Groq API key
-- Web interna desplegada, por ejemplo en Vercel
-- Endpoint seguro para recibir releases
+- Endpoint productivo de Kull disponible
+- Token del webhook de Kull
 - Repo objetivo con historial Git
 
 ## Flujo
@@ -23,29 +23,27 @@ Groq
         ↓
 release-doc.html
         ↓
-Release Site API
+Kull Commit Docs API
         ↓
-Pagina de release estructurada en /proyectos/{projectSlug}/wiki
+Pagina de release en /proyectos/{projectSlug}/wiki
 ```
 
 ## Variables de entorno
 
 ```env
+AI_MODEL=llama-3.1-8b-instant
 GROQ_API_KEY=
-AI_MODEL=
-RELEASE_SITE_URL=
-RELEASE_SITE_TOKEN=
+KULL_COMMIT_DOCS_URL=https://api-manage.kull.cl/api/commit-docs/webhook
+KULL_COMMIT_DOCS_TOKEN=
 TARGET_REPO=
 ```
 
 `TARGET_REPO` es opcional. Si no se define, los comandos git se ejecutan sobre el directorio actual.
 
-Configurar Groq:
+En Bitbucket marca como secured:
 
-```env
-AI_MODEL=llama-3.1-8b-instant
-GROQ_API_KEY=
-```
+- `GROQ_API_KEY`
+- `KULL_COMMIT_DOCS_TOKEN`
 
 ## Uso local
 
@@ -53,30 +51,26 @@ GROQ_API_KEY=
 npm install
 ```
 
-Generar input mock:
+Generar input mock y documentacion HTML:
 
 ```bash
-node scripts/generate-sample-release.js
+npm run release:sample
 ```
 
-Generar documentacion HTML desde el input mock:
-
-```bash
-npm run release:generate-doc
-```
-
-Ejecutar sample completo hasta publicar:
+Publicar el sample en Kull:
 
 ```bash
 npm run release:sample:full
 ```
+
+Para publicar necesitas `KULL_COMMIT_DOCS_TOKEN` real.
 
 ## Uso contra un repo objetivo
 
 ```bash
 TARGET_REPO="../ticket-api-demo" npm run release:collect
 npm run release:generate-doc
-npm run release:publish
+npm run release:publish:kull
 ```
 
 Flujo completo:
@@ -87,7 +81,7 @@ TARGET_REPO="../ticket-api-demo" npm run release:docs
 
 ## Uso desde Bitbucket Pipelines
 
-Ejemplo conceptual desde un repo de aplicacion:
+Para repos con codigo en la raiz:
 
 ```yaml
 image: node:20
@@ -96,27 +90,85 @@ pipelines:
   branches:
     main:
       - step:
-          name: Test and generate release docs
+          name: Test and publish release docs
+          caches:
+            - node
           script:
             - npm ci
-            - npm test
+            - set +e
+            - npm test > test-output.log 2>&1
+            - TEST_EXIT_CODE=$?
+            - cat test-output.log
+            - if [ "$TEST_EXIT_CODE" -eq 0 ]; then export RELEASE_STATUS="passed"; else export RELEASE_STATUS="broken"; fi
+            - set -e
             - cd ..
             - git clone https://github.com/tomi-exe/Automation-scripts-bitbucket.git
             - cd Automation-scripts-bitbucket
             - npm ci
-            - TARGET_REPO="../repo-aplicacion" npm run release:docs
+            - RELEASE_STATUS="$RELEASE_STATUS" TEST_OUTPUT_PATH="$BITBUCKET_CLONE_DIR/test-output.log" TARGET_REPO="$BITBUCKET_CLONE_DIR" npm run release:docs
+```
+
+Para repos donde la app vive en `ticket-api-demo`:
+
+```bash
+RELEASE_STATUS="$RELEASE_STATUS" TEST_OUTPUT_PATH="$BITBUCKET_CLONE_DIR/ticket-api-demo/test-output.log" TARGET_REPO="$BITBUCKET_CLONE_DIR/ticket-api-demo" npm run release:docs
 ```
 
 Como el repo central es publico, no se requiere token de GitHub para clonarlo.
 
+## Scripts disponibles
+
+- `npm run release:collect`: recolecta metadata, commits y diffs del repo objetivo.
+- `npm run release:generate-doc`: usa Groq para generar `release-doc.html`.
+- `npm run release:publish`: publica el release en Kull.
+- `npm run release:publish:kull`: publica el release en Kull.
+- `npm run release:publish:site`: publica en una web interna generica, disponible como fallback manual.
+- `npm run release:publish:confluence`: publica el HTML en Confluence, disponible como fallback manual.
+- `npm run release:docs`: ejecuta collect, generate y publish hacia Kull.
+- `npm run release:sample`: genera input mock y HTML con Groq.
+- `npm run release:sample:full`: genera input mock, HTML y publica en Kull.
+
+## Payload hacia Kull
+
+El script `upload-kull-commit-docs.js` envia:
+
+- metadata de fuente y fecha;
+- proyecto, repositorio y `repository.url`;
+- titulo, estado, branch y commit del release;
+- HTML generado por Groq;
+- commits y diffs;
+- salida de tests;
+- ruta sugerida `/proyectos/{projectSlug}/wiki`.
+
+`repository.url` es obligatorio porque Kull lo usa para resolver la wiki correcta. Si el backend no encuentra el proyecto, una respuesta `200 queued` se considera exitosa y queda pendiente para asignacion manual.
+
+Ver contrato completo en `docs/kull-commit-docs-payload.md`.
+
+## Releases con tests fallidos
+
+El repo de aplicacion puede pasar `RELEASE_STATUS=broken` al ejecutar `release:docs`.
+
+Cuando el estado es `broken`:
+
+- La pagina igual se publica en Kull.
+- El titulo principal del HTML se pinta rojo.
+- El titulo del release se prefija con `[BROKEN]`.
+- Si el pipeline pasa `TEST_OUTPUT_PATH`, Groq resume que test fallo, en que archivo y por que.
+
+Ejemplo:
+
+```bash
+RELEASE_STATUS=broken TEST_OUTPUT_PATH="$BITBUCKET_CLONE_DIR/test-output.log" TARGET_REPO="$BITBUCKET_CLONE_DIR" npm run release:docs
+```
+
 ## Troubleshooting
 
-### La web responde 401 Unauthorized
+### Kull responde 401 Unauthorized
 
 Revisar en Bitbucket:
 
-- `RELEASE_SITE_TOKEN` debe ser el token real esperado por la web.
-- No usar valores como `$RELEASE_SITE_TOKEN`.
+- `KULL_COMMIT_DOCS_TOKEN` debe ser el token real esperado por Kull.
+- No usar valores como `$KULL_COMMIT_DOCS_TOKEN`.
 - No envolver el valor en comillas.
 
 ### El log muestra variables como `$AI_MODEL`
@@ -135,57 +187,6 @@ Ejemplo correcto:
 AI_MODEL=llama-3.1-8b-instant
 ```
 
-## Scripts disponibles
-
-- `npm run release:collect`: recolecta metadata, commits y diffs del repo objetivo.
-- `npm run release:generate-doc`: usa Groq para generar `release-doc.html`.
-- `npm run release:publish`: publica el release en la web interna.
-- `npm run release:publish:site`: publica el release en la web interna.
-- `npm run release:publish:confluence`: publica el HTML en Confluence, disponible como fallback.
-- `npm run release:docs`: ejecuta collect, generate y publish hacia la web interna.
-- `npm run release:sample`: genera input mock y HTML con Groq.
-- `npm run release:sample:full`: genera input mock, HTML y publica en la web interna.
-
-## Endpoint de la web interna
-
-La web debe exponer un endpoint:
-
-```http
-POST /api/release-docs
-Authorization: Bearer <RELEASE_SITE_TOKEN>
-Content-Type: application/json
-```
-
-El script `upload-release-site.js` envia un payload con:
-
-- metadata del proyecto y repositorio;
-- estado del release;
-- HTML generado por Groq;
-- commits y diffs;
-- salida de tests;
-- ruta sugerida `/proyectos/{projectSlug}/wiki`.
-
-El backend de la web debe decidir como guardar el release en BD y como mostrarlo.
-
-Ver contrato completo sugerido en `docs/release-site-payload.md`.
-
-## Releases con tests fallidos
-
-El repo de aplicacion puede pasar `RELEASE_STATUS=broken` al ejecutar `release:docs`.
-
-Cuando el estado es `broken`:
-
-- La pagina igual se publica en la web interna.
-- El titulo principal del HTML se pinta rojo.
-- El titulo del release se prefija con `[BROKEN]`.
-- Si el pipeline pasa `TEST_OUTPUT_PATH`, Groq resume qué test falló, en qué archivo y por qué.
-
-Ejemplo:
-
-```bash
-RELEASE_STATUS=broken TEST_OUTPUT_PATH="$BITBUCKET_CLONE_DIR/test-output.log" TARGET_REPO="$BITBUCKET_CLONE_DIR" npm run release:docs
-```
-
 ## Archivos generados
 
 - `release-input.json`
@@ -197,8 +198,8 @@ Ambos estan ignorados por git.
 
 - La calidad de la documentacion depende de commits y diffs claros.
 - `git diff HEAD~1 HEAD` requiere historial suficiente.
-- Groq y la web interna requieren credenciales reales configuradas en variables seguras.
-- El template es HTML simple para renderizar en la web interna.
+- Groq y Kull requieren credenciales reales configuradas en variables seguras.
+- El template es HTML simple para renderizar en Kull.
 
 ## Mejoras futuras
 

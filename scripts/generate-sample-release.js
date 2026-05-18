@@ -6,6 +6,10 @@ const outputPath = path.resolve(process.cwd(), "release-input.json");
 const payload = {
   date: new Date().toISOString().slice(0, 10),
   repo: "ticket-api-demo",
+  repoFullName: "automation-confluence/automation-tests",
+  repoSlug: "automation-tests",
+  repoUrl: "https://bitbucket.org/automation-confluence/automation-tests",
+  projectKey: "DDS",
   branch: "main",
   commit: "abc1234",
   targetRepo: "sample",
