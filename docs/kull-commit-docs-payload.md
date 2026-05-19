@@ -35,7 +35,7 @@ Content-Type: application/json
     "commitShort": "e60adbb"
   },
   "content": {
-    "html": "<h1>...</h1>"
+    "markdown": "# Release 2026-05-18 - main\n..."
   },
   "changes": {
     "commits": "...",
@@ -59,7 +59,7 @@ Content-Type: application/json
 - `repository.url`: obligatorio. Kull lo usa para resolver automaticamente el proyecto/wiki correcta.
 - `release.commit`: se envia siempre que exista para permitir idempotencia.
 - `release.status`: permite marcar releases `passed`, `broken`, `failed` o `error`.
-- `content.html`: HTML simple generado por Groq.
+- `content.markdown`: Markdown generado por Groq.
 - `tests.output`: salida de tests capturada por el pipeline.
 
 ## Respuestas esperadas

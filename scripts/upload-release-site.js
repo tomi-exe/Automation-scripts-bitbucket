@@ -5,7 +5,7 @@ const path = require("path");
 const axios = require("axios");
 
 const inputPath = path.resolve(process.cwd(), "release-input.json");
-const htmlPath = path.resolve(process.cwd(), "release-doc.html");
+const markdownPath = path.resolve(process.cwd(), "release-doc.md");
 
 const requiredEnvVars = ["RELEASE_SITE_URL", "RELEASE_SITE_TOKEN"];
 const brokenStatuses = ["broken", "failed", "failure"];
@@ -71,7 +71,7 @@ function getTestsPayload(input) {
   };
 }
 
-function buildPayload(input, html) {
+function buildPayload(input, markdown) {
   const projectSlug = getProjectSlug(input);
   const releaseStatus = getReleaseStatus(input);
 
@@ -99,7 +99,7 @@ function buildPayload(input, html) {
       commitShort: getCommitShort(input.commit),
     },
     content: {
-      html,
+      markdown,
     },
     changes: {
       commits: input.commits,
@@ -117,11 +117,11 @@ function buildPayload(input, html) {
 async function main() {
   validateEnv();
   assertFileExists(inputPath, "release-input.json");
-  assertFileExists(htmlPath, "release-doc.html");
+  assertFileExists(markdownPath, "release-doc.md");
 
   const input = JSON.parse(fs.readFileSync(inputPath, "utf-8"));
-  const html = fs.readFileSync(htmlPath, "utf-8");
-  const payload = buildPayload(input, html);
+  const markdown = fs.readFileSync(markdownPath, "utf-8");
+  const payload = buildPayload(input, markdown);
   const url = getEnv("RELEASE_SITE_URL", { required: true });
   const token = getEnv("RELEASE_SITE_TOKEN", { required: true });
 

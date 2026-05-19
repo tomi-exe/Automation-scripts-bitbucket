@@ -8,9 +8,9 @@ const inputPath = path.resolve(process.cwd(), "release-input.json");
 const templatePath = path.resolve(
   process.cwd(),
   "templates",
-  "confluence-release-template.html"
+  "release-doc-template.md"
 );
-const outputPath = path.resolve(process.cwd(), "release-doc.html");
+const outputPath = path.resolve(process.cwd(), "release-doc.md");
 const brokenStatuses = ["broken", "failed", "failure"];
 
 function assertFileExists(filePath, label) {
@@ -53,22 +53,33 @@ function getReleaseStatus(input) {
   return (input.releaseStatus || "unknown").toLowerCase();
 }
 
-function decorateReleaseStatus(html, input) {
+function decorateReleaseStatus(markdown, input) {
   const status = getReleaseStatus(input);
 
   if (!brokenStatuses.includes(status)) {
-    return html;
+    return markdown;
   }
 
-  return html.replace(
-    /<h1([^>]*)>/i,
-    '<h1$1 style="color: #bf2600;">'
-  );
+  const lines = markdown.split(/\r?\n/);
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index];
+
+    if (line.startsWith("# ")) {
+      if (!line.includes("[BROKEN]")) {
+        lines[index] = line.replace(/^#\s+/, "# [BROKEN] ");
+      }
+
+      return lines.join("\n");
+    }
+  }
+
+  return markdown;
 }
 
 async function main() {
   assertFileExists(inputPath, "release-input.json");
-  assertFileExists(templatePath, "confluence-release-template.html");
+  assertFileExists(templatePath, "release-doc-template.md");
 
   const input = JSON.parse(fs.readFileSync(inputPath, "utf-8"));
   const template = fs.readFileSync(templatePath, "utf-8");
@@ -77,7 +88,7 @@ async function main() {
   const client = new OpenAI(aiConfig.clientOptions);
 
   const prompt = `
-Genera documentación de release en HTML simple para una página web interna.
+Genera documentación de release en Markdown para una página web interna.
 
 Debes usar exactamente este template:
 
@@ -113,8 +124,8 @@ Salida de tests:
 ${input.testOutput || "No hay salida de tests disponible."}
 
 Reglas obligatorias:
-- Devuelve solo HTML final.
-- No uses Markdown.
+- Devuelve solo Markdown final.
+- No uses HTML.
 - No inventes información.
 - Si la información no permite afirmar algo, escribe que no se identifica con la información disponible.
 - Si el estado del release es broken, explica qué prueba falló usando la salida de tests disponible.
@@ -124,8 +135,8 @@ Reglas obligatorias:
 - El resumen técnico debe servir a desarrolladores.
 - Mantén la estructura del template.
 - Reemplaza todos los placeholders.
-- En listas HTML usa elementos <li>.
-- No incluyas explicaciones fuera del HTML.
+- En listas Markdown usa guiones ("- ") para cada ítem.
+- No incluyas explicaciones fuera del Markdown.
 `;
 
   const response = await client.chat.completions.create({
@@ -144,17 +155,17 @@ Reglas obligatorias:
     temperature: 0.2,
   });
 
-  const html = response.choices[0]?.message?.content;
+  const markdown = response.choices[0]?.message?.content;
 
-  if (!html) {
+  if (!markdown) {
     throw new Error("OpenAI no devolvió contenido.");
   }
 
-  const decoratedHtml = decorateReleaseStatus(html, input);
+  const decoratedMarkdown = decorateReleaseStatus(markdown, input);
 
-  fs.writeFileSync(outputPath, decoratedHtml);
+  fs.writeFileSync(outputPath, decoratedMarkdown);
 
-  console.log(`release-doc.html generado en ${outputPath}`);
+  console.log(`release-doc.md generado en ${outputPath}`);
   console.log(`Proveedor AI usado: ${aiConfig.provider}`);
   console.log(`Modelo AI usado: ${aiConfig.model}`);
   console.log(`Estado del release: ${getReleaseStatus(input)}`);

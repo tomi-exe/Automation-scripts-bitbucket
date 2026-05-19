@@ -21,7 +21,7 @@ collect-changes.js
         ↓
 Groq
         ↓
-release-doc.html
+ release-doc.md
         ↓
 Kull Commit Docs API
         ↓
@@ -51,7 +51,7 @@ En Bitbucket marca como secured:
 npm install
 ```
 
-Generar input mock y documentacion HTML:
+Generar input mock y documentacion Markdown:
 
 ```bash
 npm run release:sample
@@ -119,14 +119,14 @@ Como el repo central es publico, no se requiere token de GitHub para clonarlo.
 ## Scripts disponibles
 
 - `npm run release:collect`: recolecta metadata, commits y diffs del repo objetivo.
-- `npm run release:generate-doc`: usa Groq para generar `release-doc.html`.
+- `npm run release:generate-doc`: usa Groq para generar `release-doc.md`.
 - `npm run release:publish`: publica el release en Kull.
 - `npm run release:publish:kull`: publica el release en Kull.
 - `npm run release:publish:site`: publica en una web interna generica, disponible como fallback manual.
-- `npm run release:publish:confluence`: publica el HTML en Confluence, disponible como fallback manual.
+- `npm run release:publish:confluence`: publica el Markdown (convertido a HTML) en Confluence, disponible como fallback manual.
 - `npm run release:docs`: ejecuta collect, generate y publish hacia Kull.
-- `npm run release:sample`: genera input mock y HTML con Groq.
-- `npm run release:sample:full`: genera input mock, HTML y publica en Kull.
+- `npm run release:sample`: genera input mock y Markdown con Groq.
+- `npm run release:sample:full`: genera input mock, Markdown y publica en Kull.
 
 ## Payload hacia Kull
 
@@ -135,7 +135,7 @@ El script `upload-kull-commit-docs.js` envia:
 - metadata de fuente y fecha;
 - proyecto, repositorio y `repository.url`;
 - titulo, estado, branch y commit del release;
-- HTML generado por Groq;
+- Markdown generado por Groq;
 - commits y diffs;
 - salida de tests;
 - ruta sugerida `/proyectos/{projectSlug}/wiki`.
@@ -151,7 +151,7 @@ El repo de aplicacion puede pasar `RELEASE_STATUS=broken` al ejecutar `release:d
 Cuando el estado es `broken`:
 
 - La pagina igual se publica en Kull.
-- El titulo principal del HTML se pinta rojo.
+- El titulo principal del Markdown se prefija con `[BROKEN]`.
 - El titulo del release se prefija con `[BROKEN]`.
 - Si el pipeline pasa `TEST_OUTPUT_PATH`, Groq resume que test fallo, en que archivo y por que.
 
@@ -190,7 +190,7 @@ AI_MODEL=llama-3.1-8b-instant
 ## Archivos generados
 
 - `release-input.json`
-- `release-doc.html`
+- `release-doc.md`
 
 Ambos estan ignorados por git.
 
@@ -199,7 +199,7 @@ Ambos estan ignorados por git.
 - La calidad de la documentacion depende de commits y diffs claros.
 - `git diff HEAD~1 HEAD` requiere historial suficiente.
 - Groq y Kull requieren credenciales reales configuradas en variables seguras.
-- El template es HTML simple para renderizar en Kull.
+- El template es Markdown simple para renderizar en Kull.
 
 ## Mejoras futuras
 

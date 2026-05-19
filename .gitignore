@@ -1,6 +1,7 @@
 node_modules/
 .env
 release-input.json
+release-doc.md
 release-doc.html
 npm-debug.log*
 .DS_Store

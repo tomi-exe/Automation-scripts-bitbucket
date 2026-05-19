@@ -3,9 +3,10 @@ require("dotenv").config();
 const fs = require("fs");
 const path = require("path");
 const axios = require("axios");
+const { marked } = require("marked");
 
 const inputPath = path.resolve(process.cwd(), "release-input.json");
-const htmlPath = path.resolve(process.cwd(), "release-doc.html");
+const markdownPath = path.resolve(process.cwd(), "release-doc.md");
 
 const requiredEnvVars = [
   "CONFLUENCE_EMAIL",
@@ -118,10 +119,11 @@ async function main() {
   validateEnv();
 
   assertFileExists(inputPath, "release-input.json");
-  assertFileExists(htmlPath, "release-doc.html");
+  assertFileExists(markdownPath, "release-doc.md");
 
   const input = JSON.parse(fs.readFileSync(inputPath, "utf-8"));
-  const html = fs.readFileSync(htmlPath, "utf-8");
+  const markdown = fs.readFileSync(markdownPath, "utf-8");
+  const html = marked.parse(markdown);
 
   const baseUrl = process.env.CONFLUENCE_BASE_URL.replace(/\/$/, "");
   const auth = getAuthHeader();
