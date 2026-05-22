@@ -53,6 +53,14 @@ function getReleaseStatus(input) {
   return (input.releaseStatus || "unknown").toLowerCase();
 }
 
+function formatJson(value) {
+  if (!value) {
+    return "No disponible.";
+  }
+
+  return JSON.stringify(value, null, 2);
+}
+
 function decorateReleaseStatus(markdown, input) {
   const status = getReleaseStatus(input);
 
@@ -111,11 +119,35 @@ ${input.commit}
 Commits:
 ${input.commits}
 
+Importante:
+Los mensajes de commit son una señal secundaria. Si los commits son vagos o incompletos, prioriza el diff, archivos modificados, snippets de código, rutas detectadas, package.json, documentación existente y salida de tests.
+
 Diff estadístico:
 ${input.diffStat}
 
 Diff resumido:
 ${input.diffSummary}
+
+Archivos modificados:
+${formatJson(input.changedFiles)}
+
+Fuente autoritativa de cambios:
+Los archivos listados en "Archivos modificados", "Diff resumido" y "Resumen por archivo modificado" son la única fuente para decidir qué cambió en este release.
+
+Resumen por archivo modificado:
+${formatJson(input.fileSummaries)}
+
+Estructura relevante del proyecto:
+${formatJson(input.projectStructure)}
+
+Información de package.json:
+${formatJson(input.packageInfo)}
+
+Superficie API detectada:
+${formatJson(input.detectedApiSurface)}
+
+Contexto de documentación existente:
+${formatJson(input.docsContext)}
 
 Estado del release:
 ${input.releaseStatus || "unknown"}
@@ -123,11 +155,25 @@ ${input.releaseStatus || "unknown"}
 Salida de tests:
 ${input.testOutput || "No hay salida de tests disponible."}
 
+Resumen estructurado de tests:
+${formatJson(input.testSummary)}
+
 Reglas obligatorias:
 - Devuelve solo Markdown final.
 - No uses HTML.
 - No inventes información.
 - Si la información no permite afirmar algo, escribe que no se identifica con la información disponible.
+- No dependas solo del mensaje del commit. Si el commit dice algo genérico, explica los cambios usando evidencia del diff, snippets y archivos modificados.
+- Solo declares que algo "cambió", "se agregó", "se corrigió" o "se modificó" si aparece en Archivos modificados, Diff resumido o Resumen por archivo modificado.
+- Usa estructura del proyecto, package.json, superficie API detectada y documentación existente solo para entender el contexto del sistema, no como prueba de cambio.
+- Si un endpoint, dependencia o comportamiento existe en el proyecto pero no aparece en el diff, descríbelo como contexto existente, no como cambio del release.
+- Si la evidencia de cambio es limitada, dilo explícitamente y enfoca la documentación en los archivos realmente modificados.
+- En cambios detallados, menciona la evidencia usada: archivo, ruta, endpoint, test o dependencia cuando esté disponible.
+- Solo traduzcas endpoints, validaciones, servicios, controladores, tests o dependencias a impacto funcional si aparecen modificados en el diff.
+- No conviertas README, estructura del proyecto o superficie API detectada en cambios funcionales si no aparecen en el diff.
+- La sección Impacto debe describir solo consecuencias de los archivos modificados. Si solo cambió CI/CD, pipeline, documentación o configuración, el impacto funcional sobre usuarios/API debe decir que no se identifica con la evidencia disponible.
+- No menciones endpoints, validaciones, servicios o cambios de API en Impacto salvo que el diff modifique archivos de rutas, app, controllers, services, validators u OpenAPI.
+- Si incumples la regla anterior, la documentación se considera incorrecta.
 - Si el estado del release es broken, explica qué prueba falló usando la salida de tests disponible.
 - Si hay stack trace o assertion error de tests, resume el archivo, nombre del test, diferencia esperada/recibida y causa probable.
 - Separa claramente resumen funcional y resumen técnico.
@@ -145,14 +191,14 @@ Reglas obligatorias:
       {
         role: "system",
         content:
-          "Eres un asistente técnico que genera documentación de releases precisa, estructurada y compatible con Confluence.",
+          "Eres un asistente técnico que genera documentación de releases precisa. Debes distinguir estrictamente entre cambios reales del diff y contexto existente del proyecto.",
       },
       {
         role: "user",
         content: prompt,
       },
     ],
-    temperature: 0.2,
+    temperature: 0,
   });
 
   const markdown = response.choices[0]?.message?.content;

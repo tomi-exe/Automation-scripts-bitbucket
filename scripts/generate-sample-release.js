@@ -52,6 +52,90 @@ diff --git a/src/services/tickets.service.js b/src/services/tickets.service.js
 diff --git a/tests/tickets.test.js b/tests/tickets.test.js
 + add coverage for ticket creation, priority validation and status update
 `,
+  changedFiles: [
+    { status: "M", path: "src/controllers/tickets.controller.js" },
+    { status: "M", path: "src/services/tickets.service.js" },
+    { status: "M", path: "src/validators/tickets.validator.js" },
+    { status: "M", path: "tests/tickets.test.js" },
+  ],
+  fileSummaries: [
+    {
+      path: "src/validators/tickets.validator.js",
+      status: "M",
+      diff: [
+        '+ const allowedPriorities = ["low", "medium", "high"];',
+        '+ const allowedStatuses = ["open", "in_progress", "resolved"];',
+        "+ validate required fields: title, description",
+      ].join("\n"),
+      currentSnippet:
+        'const allowedPriorities = ["low", "medium", "high"];\nconst allowedStatuses = ["open", "in_progress", "resolved"];',
+    },
+    {
+      path: "src/services/tickets.service.js",
+      status: "M",
+      diff: "+ move ticket creation and status update logic into service layer",
+      currentSnippet:
+        "function createTicket(payload) {\n  // creates in-memory support ticket\n}",
+    },
+    {
+      path: "tests/tickets.test.js",
+      status: "M",
+      diff: "+ add coverage for ticket creation, priority validation and status update",
+      currentSnippet:
+        'it("rejects invalid priority values", async () => {\n  // test validation error\n});',
+    },
+  ],
+  projectStructure: [
+    "src/app.js",
+    "src/server.js",
+    "src/routes/tickets.routes.js",
+    "src/controllers/tickets.controller.js",
+    "src/services/tickets.service.js",
+    "src/validators/tickets.validator.js",
+    "tests/tickets.test.js",
+    "package.json",
+    "README.md",
+  ],
+  packageInfo: {
+    detected: true,
+    name: "ticket-api-demo",
+    version: "1.0.0",
+    description: "Internal Ticket API demo",
+    scripts: {
+      start: "node src/server.js",
+      test: "jest",
+    },
+    dependencies: ["express"],
+    devDependencies: ["jest", "supertest"],
+  },
+  detectedApiSurface: [
+    { file: "src/routes/tickets.routes.js", method: "GET", path: "/tickets" },
+    { file: "src/routes/tickets.routes.js", method: "POST", path: "/tickets" },
+    {
+      file: "src/routes/tickets.routes.js",
+      method: "PATCH",
+      path: "/tickets/:id/status",
+    },
+  ],
+  docsContext: [
+    {
+      path: "README.md",
+      content:
+        "Internal Ticket API demo para gestionar tickets internos de soporte con almacenamiento en memoria.",
+    },
+  ],
+  testSummary: {
+    status: process.env.RELEASE_STATUS || "unknown",
+    failed: process.env.RELEASE_STATUS === "broken",
+    highlights:
+      process.env.RELEASE_STATUS === "broken"
+        ? [
+            "FAIL tests/tickets.test.js",
+            "Internal Ticket API › GET /health returns service status",
+            "Tests: 1 failed, 7 passed, 8 total",
+          ]
+        : ["Todos los tests pasaron."],
+  },
 };
 
 fs.writeFileSync(outputPath, JSON.stringify(payload, null, 2));

@@ -128,6 +128,22 @@ Como el repo central es publico, no se requiere token de GitHub para clonarlo.
 - `npm run release:sample`: genera input mock y Markdown con Groq.
 - `npm run release:sample:full`: genera input mock, Markdown y publica en Kull.
 
+## Contexto usado para documentar
+
+La documentacion no depende solo del mensaje del commit. `collect-changes.js` arma `release-input.json` usando varias señales del repo objetivo:
+
+- commits recientes, como contexto secundario;
+- archivos modificados con `git diff --name-status HEAD~1 HEAD`;
+- diff estadistico y diff resumido;
+- diff y snippet limitado por archivo modificado;
+- estructura relevante del proyecto con `git ls-files`;
+- `package.json`, scripts y dependencias cuando existen;
+- endpoints detectados en rutas, controladores o archivos de API;
+- contexto de `README.md`, OpenAPI o Swagger si existe;
+- salida de tests desde `TEST_OUTPUT_PATH`.
+
+Esto permite que Groq explique cambios reales aunque el commit tenga un mensaje pobre como `update stuff`.
+
 ## Payload hacia Kull
 
 El script `upload-kull-commit-docs.js` envia:
